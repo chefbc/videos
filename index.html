@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' file:">
+    <title>Video Library</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            display: flex;
+            gap: 20px;
+        }
+
+        .video-section {
+            flex: 2;
+        }
+
+        .list-section {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .search-container {
+            margin-bottom: 20px;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .video-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+
+        .video-item {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .video-item:hover {
+            transform: translateX(-2px);
+            background: #f0f0f0;
+        }
+
+        .video-item.missing {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .video-player {
+            width: 100%;
+            margin-bottom: 20px;
+            background: #000;
+            border-radius: 4px;
+            overflow: hidden;
+            aspect-ratio: 16 / 9;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            background: black;
+            border-radius: 4px;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d00;
+        }
+
+        .info {
+            background: #e6f3ff;
+            color: #0066cc;
+        }
+
+        .warning {
+            background: #fff3e6;
+            color: #cc7700;
+        }
+
+        .now-playing {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fff;
+            border-radius: 4px;
+            font-weight: bold;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .list-section {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="video-section">
+            <div class="now-playing" id="nowPlaying">No video selected</div>
+            <div class="video-player">
+                <video id="videoPlayer" controls>
+                    <source src="" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+
+        <div class="list-section">
+            <div class="search-container">
+                <input type="text" id="searchInput" placeholder="Search for a video...">
+            </div>
+            <div class="video-list" id="videoList">
+                <!-- Video items will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        let videoMapping = [];
+
+        // Load videos using IPC
+        async function loadVideos() {
+            try {
+                videoMapping = await ipcRenderer.invoke('get-video-mapping');
+                console.log('Loaded videos:', videoMapping);
+                displayVideos(videoMapping);
+                showStatus('Videos loaded successfully', 'info');
+            } catch (error) {
+                console.error('Error loading videos:', error);
+                showStatus('Error loading videos: ' + error.message, 'error');
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = 'status-message ' + type;
+            setTimeout(() => {
+                statusDiv.textContent = '';
+                statusDiv.className = 'status-message';
+            }, 5000);
+        }
+
+        // Display videos in the list
+        function displayVideos(videos) {
+            const videoList = document.getElementById('videoList');
+            videoList.innerHTML = '';
+
+            if (videos.length === 0) {
+                videoList.innerHTML = '<div>No videos found</div>';
+                return;
+            }
+
+            videos.forEach(async (video) => {
+                const videoItem = document.createElement('div');
+                videoItem.className = 'video-item';
+                videoItem.innerHTML = `<span title="${video.title}">${video.title}</span>`;
+                
+                // Verify if video file exists
+                const exists = await ipcRenderer.invoke('verify-video', video.filename);
+                if (!exists) {
+                    videoItem.classList.add('missing');
+                    videoItem.title = 'Video file not found';
+                } else {
+                    videoItem.onclick = () => playVideo(video);
+                }
+                
+                videoList.appendChild(videoItem);
+            });
+        }
+
+        // Play selected video
+        function playVideo(video) {
+            const videoPlayer = document.getElementById('videoPlayer');
+            const nowPlaying = document.getElementById('nowPlaying');
+            
+            console.log('Playing video:', video.filename);
+            videoPlayer.src = video.filename;
+            nowPlaying.textContent = `Now Playing: ${video.title}`;
+            nowPlaying.title = video.title;
+            
+            videoPlayer.play().catch(error => {
+                console.error('Error playing video:', error);
+                showStatus('Error playing video. Please check if the video file exists and is accessible.', 'error');
+            });
+        }
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredVideos = videoMapping.filter(video => 
+                video.title.toLowerCase().includes(searchTerm)
+            );
+            displayVideos(filteredVideos);
+        });
+
+        // Handle video errors
+        document.getElementById('videoPlayer').addEventListener('error', (e) => {
+            console.error('Video error:', e);
+            showStatus('Error playing video. The file might be corrupted or use an unsupported format.', 'error');
+        });
+
+        // Initialize when page loads
+        loadVideos();
+    </script>
+</body>
+</html> 

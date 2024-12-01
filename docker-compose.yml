@@ -1,0 +1,24 @@
+services:
+  windows:
+    image: dockurr/windows
+    container_name: windows
+    # devices:
+    #   - /dev/kvm
+    environment:
+      VERSION: "11"
+      KVM: "N"
+      USERNAME: "chefbc"
+      PASSWORD: "54741"
+      RAM_SIZE: "8G"
+      CPU_CORES: "4"
+      # ARGUMENTS: "-device usb-host,vendorid=0x1234,productid=0x1234"
+    volumes:
+      # -  /Volumes/Untitled/:/storage2
+      - /Users/chefbc/Documents/github/chefbc/videos:/data
+    cap_add:
+      - NET_ADMIN
+    ports:
+      - 8006:8006
+      - 3389:3389/tcp
+      - 3389:3389/udp
+    stop_grace_period: 2m

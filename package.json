@@ -1,0 +1,44 @@
+{
+  "name": "video-library",
+  "version": "1.0.0",
+  "description": "A self-contained video library application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron . --dev",
+    "build": "electron-builder --config.asar=false",
+    "build:mac": "electron-builder --mac --config.asar=false --config.mac.identity=null",
+    "build:win": "electron-builder --win portable --config.asar=false",
+    "build:linux": "electron-builder --linux --config.asar=false"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^27.1.2",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.videolibrary.app",
+    "productName": "Video Library",
+    "compression": "store",
+    "mac": {
+      "category": "public.app-category.video",
+      "target": ["dir"],
+      "identity": null
+    },
+    "win": {
+      "target": "portable"
+    },
+    "linux": {
+      "target": ["dir"],
+      "category": "Video"
+    },
+    "files": [
+      "index.html",
+      "main.js",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    }
+  }
+} 

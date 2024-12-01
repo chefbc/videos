@@ -1,0 +1,82 @@
+name: Build Video Library App
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build macOS app
+        run: npm run build:mac
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Video-Library-macOS
+          path: dist/mac/Video Library.app
+          
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Build Windows app
+        run: npm run build:win
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Video-Library-Windows
+          path: dist/win-unpacked/
+          
+  create-release:
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v3
+        
+      - name: Create ZIP files
+        run: |
+          zip -r Video-Library-macOS.zip Video-Library-macOS
+          zip -r Video-Library-Windows.zip Video-Library-Windows
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Release v${{ github.run_number }}
+          files: |
+            Video-Library-macOS.zip
+            Video-Library-Windows.zip
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
