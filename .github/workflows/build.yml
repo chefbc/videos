@@ -63,6 +63,9 @@ jobs:
       - name: Download all artifacts
         uses: actions/download-artifact@v3
         
+      - name: List files
+        run: ls -R
+        
       - name: Create ZIP files
         run: |
           zip -r Video-Library-macOS.zip Video-Library-macOS
