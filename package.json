@@ -8,7 +8,8 @@
     "build": "electron-builder --config.asar=false",
     "build:mac-x64": "electron-builder --mac --x64 --config.asar=false --config.mac.identity=null",
     "build:mac-arm64": "electron-builder --mac --arm64 --config.asar=false --config.mac.identity=null",
-    "build:win": "electron-builder --win portable --config.asar=false"
+    "build:win": "electron-builder --win --ia32 --x64",
+    "build:win-x86": "electron-builder --win --ia32"
   },
   "author": "",
   "license": "ISC",
@@ -27,7 +28,15 @@
       "artifactName": "${productName}-${arch}.${ext}"
     },
     "win": {
-      "target": "portable"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "ia32",
+            "x64"
+          ]
+        }
+      ]
     },
     "linux": {
       "target": ["dir"],
