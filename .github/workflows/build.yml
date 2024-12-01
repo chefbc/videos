@@ -29,7 +29,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: Video-Library-macOS
-          path: dist/mac/Video Library.app
+          path: dist/mac
           
   build-windows:
     runs-on: windows-latest
@@ -68,8 +68,12 @@ jobs:
         
       - name: Create ZIP files
         run: |
-          zip -r Video-Library-macOS.zip Video-Library-macOS
-          zip -r Video-Library-Windows.zip Video-Library-Windows
+          if [ -d "Video-Library-macOS" ]; then
+            zip -r Video-Library-macOS.zip Video-Library-macOS
+          fi
+          if [ -d "Video-Library-Windows" ]; then
+            zip -r Video-Library-Windows.zip Video-Library-Windows
+          fi
           
       - name: Create Release
         uses: softprops/action-gh-release@v1
