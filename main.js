@@ -4,26 +4,22 @@ const fs = require('fs');
 
 let mainWindow;
 
-// Get the directory where the app is running from
 function getAppDirectory() {
-    // In development, use current directory
-    if (process.env.NODE_ENV === 'development') {
-        return __dirname;
+    if (app.isPackaged) {
+      // For packaged app
+      if (process.platform === 'darwin') {
+        // Mac: Get directory containing the .app bundle
+        const appPath = process.execPath
+        const appBundlePath = path.resolve(appPath, '../../..')
+        return path.dirname(appBundlePath)
+      } else {
+        // Windows: Use portable dir or executable directory
+        return process.env.PORTABLE_EXECUTABLE_DIR || path.dirname(process.execPath)
+      }
     }
-
-    // In production
-    if (process.platform === 'darwin') {
-        // For macOS, look in the parent directory of the .app bundle
-        const appPath = app.getAppPath();
-        const match = appPath.match(/(.*?\.app)/);
-        if (match) {
-            return path.dirname(match[1]);
-        }
-    }
-    
-    // For Windows/Linux or fallback
-    return path.dirname(app.getPath('exe'));
-}
+    // Development mode
+    return __dirname
+  }
 
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -65,6 +61,7 @@ app.whenReady().then(() => {
 
     createWindow();
 
+    
     // Check if video_mapping.csv exists
     const appDir = getAppDirectory();
     const mappingPath = path.join(appDir, 'video_mapping.csv');
